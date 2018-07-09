@@ -20,4 +20,24 @@ mongoose.connect(dbConfig.url)
   });
 const db = mongoose.connection;
 //
+// Person generator
+// Input: Number of person to generate
+async function personGenerator(pNumber) {
+  console.log('People are generating...');
+  for (let i = 0; i < pNumber; i++) {
+    const name = faker.name.findName();
+    const joinDate = faker.date.past();
+
+    const person = new Person({
+      name,
+      joinDate,
+    });
+    await person.save(function (err) {
+        if (err) console.log(err)
+    });
+  }
+}
+
+
+
 

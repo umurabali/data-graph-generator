@@ -9,6 +9,7 @@
   "author": "Umur ABALI",
   "license": "MIT",
   "dependencies": {
+    "cli-progress": "^2.0.0",
     "faker": "^4.1.0",
     "mongoose": "^5.2.2"
   },
