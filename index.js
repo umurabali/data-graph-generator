@@ -4,6 +4,7 @@ const faker = require('faker');
 const Person = require('./models/person.js');
 const Account = require('./models/account.js');
 const Transaction = require('./models/transaction.js');
+const Bank = require('./models/bank.js');
 const dbConfig = require('./config/dbconfig');
 
 faker.locale = 'tr';
@@ -25,19 +26,29 @@ const db = mongoose.connection;
 async function personGenerator(pNumber) {
   console.log('People are generating...');
   for (let i = 0; i < pNumber; i++) {
-    const name = faker.name.findName();
-    const joinDate = faker.date.past();
+    let name = faker.name.findName();
+    console.log(name);
+    let joinDate = faker.date.past();
 
     const person = new Person({
-      name,
-      joinDate,
+      fullName: name,
+      joinDate: joinDate,
     });
-    await person.save(function (err) {
-        if (err) console.log(err)
+    await person.save((err) => {
+      if (err) console.log(err);
     });
   }
 }
+async function bankGenerator(bNumber) {
+  for (let i = 0; i < bNumber; i++) {
+    const location = faker.address.city();
 
-
-
+    const bank = new Bank({
+      location: location,
+    });
+    await bank.save((err) => {
+      if (err) console.log(err);
+    });
+  }
+}
 
