@@ -34,20 +34,17 @@ async function getBanks() {
 // Input: Number of person to generate
 
 async function personGenerator(pNumber) {
-  const people = [];
-  console.log('People are generating...');
+    console.log('People are generating...');
+    for (let i = 0; i < pNumber; i++) {
+        let name = faker.name.findName();
+        let joinDate = faker.date.past();
 
-  for (let i = 0; i < pNumber; i++) {
-    const name = faker.name.findName();
-    const joinDate = faker.date.past();
-
-    const person = new Person({
-      fullName: name,
-      joinDate,
-    });
-    people.push(person);
-  }
-  db.collection('people').insertMany(people, (error, docs) => {});
+        const person = new Person({
+            fullName: name,
+            joinDate: joinDate,
+        });
+        await person.save();
+    }
 }
 async function bankGenerator(bNumber) {
   for (let i = 0; i < bNumber; i++) {
@@ -63,9 +60,9 @@ async function bankGenerator(bNumber) {
 }
 async function accountGenerator() {
   await getBanks();
-  const accounts = [];
-  Person.find().distinct('_id', (error, doc) => {
-    for (let i = 0; i < 500; i++) {
+
+  await Person.find().distinct('_id', async (error, doc) => {
+    for (let i = 0; i < 100000; i++) {
       const acc_number = 1 + Math.floor(Math.random() * 3);
 
       for (let j = 0; j <= acc_number; j++) {
@@ -75,16 +72,16 @@ async function accountGenerator() {
           IBAN,
           bank_id: banks[Math.floor(Math.random() * banks.length)],
         });
-        accounts.push(account);
+      await account.save();
       }
     }
-    db.collection('accounts').insertMany(accounts, (error, docs) => {});
+
   });
 }
-function transactionGenerator() {
-  Account.find().distinct('_id', (error, doc) => {
-    const transactions = [];
-    for (let t = 0; t < 10000; t++) {
+async function transactionGenerator() {
+  await Account.find().distinct('_id',async (error, doc) => {
+
+    for (let t = 0; t < 3000000; t++) {
       let senderId = Math.floor(Math.random() * doc.length);
       let receiverId = Math.floor(Math.random() * doc.length);
       while (senderId === receiverId) {
@@ -95,11 +92,11 @@ function transactionGenerator() {
       const transaction = new Transaction({
         senderAccountId: doc[senderId],
         receiverAccountId: doc[receiverId],
-
       });
-      transactions.push(transaction);
+
+     await transaction.save();
     }
-    db.collection('transactions').insertMany(transactions, (error, docs) => {});
+
   });
 }
 let x;
@@ -171,7 +168,6 @@ async function transactionNodeGenerator() {
     });
 }
 
-transactionNodeGenerator();
 
 async function graphGenerator() {
 
@@ -184,3 +180,5 @@ async function graphGenerator() {
     console.log("Mission complete");
 }
 
+
+transactionNodeGenerator();
