@@ -19,7 +19,7 @@ function loadRandomDbElement(model) {
         const r = getRandomInteger(0, data);
         model.find().limit(1).skip(r)
           .then(result => resolve(result[0]._id))
-          .catch(() => reject(new Error('Hata')));
+          .catch(() => reject(new Error(`Hata ${model}`)));
       });
   });
 }
@@ -29,7 +29,7 @@ function loadRandomDbElement(model) {
 function createBankData(size) {
   let resultCount = 0;
   return new Promise((resolve, reject) => {
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < size; i += 1) {
       const bank = new Bank({
         location: faker.address.city(),
         lng: faker.address.longitude(),
@@ -76,6 +76,7 @@ function createAccountData(size, bank_id, person_id) {
         person_id,
         bank_id,
         IBAN: faker.finance.iban(),
+        balance: faker.finance.amount(),
       });
       account.save((err) => {
         if (err) reject(err);
@@ -93,7 +94,16 @@ function createRandomAccount(count) {
   return new Promise((resolve, reject) => {
     for (let i = 0; i < count; i += 1) {
       Promise.all([loadRandomDbElement(Bank), loadRandomDbElement(Person)])
-        .then(values => createAccountData(getRandomInteger(1, 4), values[0], values[1]).then(() => console.log('done')));
+        .then((values) => {
+          createAccountData(getRandomInteger(1, 4), values[0], values[1])
+            .then((result) => {
+              if (!result) reject(new Error('Account not generated'));
+              accCount += 1;
+              if (accCount === count) {
+                resolve(true);
+              }
+            });
+        });
     }
   });
 }
@@ -118,6 +128,27 @@ function createTransactionData(size, senderId, receiverId) {
   });
 }
 
+function createRandomTransaction(count) {
+  let trnsCount = 0;
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < count; i += 1) {
+      Promise.all([loadRandomDbElement(Account), loadRandomDbElement(Account)])
+        .then((accounts) => {
+          createTransactionData(getRandomInteger(1, 10), accounts[0], accounts[1])
+            .then((success) => {
+              if (!success) reject(new Error('Failing in creating transactions'));
+              trnsCount += 1;
+              if (trnsCount === count) {
+                console.log('done');
+                resolve(true);
+              }
+            });
+        });
+    }
+  });
+}
+
+
 // transaction
 
 
@@ -127,7 +158,13 @@ function createAllData(bankCount, personCount) {
     .then(() => {
       console.log('Successfully connected to the database');
       Promise.all([createBankData(bankCount), createPersonData(personCount)])
-        .then(createRandomAccount(personCount)).then(() => console.log('DONE'));
+        .then(() => {
+          createRandomAccount(personCount).then(() => {
+            createRandomTransaction(personCount).then(() => {
+              console.log('DONE');
+            });
+          });
+        });
     })
     .catch((err) => {
       console.log(err);
