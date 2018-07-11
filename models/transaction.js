@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const transactionSchema = mongoose.Schema({
 
-  senderAccountId: String,
-  receiverAccountId: String,
+  senderAccountId: mongoose.Schema.ObjectId,
+  receiverAccountId: mongoose.Schema.ObjectId,
 
 });
 

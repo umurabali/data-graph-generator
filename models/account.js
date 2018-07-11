@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const accountSchema = mongoose.Schema({
-  person_id: String,
+  person_id: mongoose.Schema.ObjectId,
   IBAN: String,
-  bank_id: String
+  bank_id: mongoose.Schema.ObjectId
 
 });
 

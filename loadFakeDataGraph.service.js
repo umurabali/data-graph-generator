@@ -5,10 +5,11 @@ const dbConfig = require('./config/dbconfig');
 const Bank = require('./models/bank');
 const Person = require('./models/person');
 const Account = require('./models/account');
+const Transaction = require('./models/transaction');
 
 
 function getRandomInteger(min, max) {
-  return Math.floor(Math.random() * max) + min;
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 function loadRandomDbElement(model) {
@@ -21,7 +22,7 @@ function loadRandomDbElement(model) {
           .catch(() => reject(new Error('Hata')));
       });
   });
-};
+}
 
 
 // bank
@@ -78,7 +79,6 @@ function createAccountData(size, bank_id, person_id) {
       });
       account.save((err) => {
         if (err) reject(err);
-        console.log(i);
         resultCount += 1;
         if (resultCount === size) {
           resolve(true);
@@ -87,21 +87,47 @@ function createAccountData(size, bank_id, person_id) {
     }
   });
 }
-// account
+
+function createRandomAccount(count) {
+  let accCount = 0;
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < count; i += 1) {
+      Promise.all([loadRandomDbElement(Bank), loadRandomDbElement(Person)])
+        .then(values => createAccountData(getRandomInteger(1, 4), values[0], values[1]).then(() => console.log('done')));
+    }
+  });
+}
+
+function createTransactionData(size, senderId, receiverId) {
+  let resultCount = 0;
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < size; i += 1) {
+      const transaction = new Transaction({
+        senderAccountId: senderId,
+        receiverAccountId: receiverId,
+        amount: faker.finance.amount(),
+      });
+      transaction.save((err) => {
+        if (err) reject(err);
+        resultCount += 1;
+        if (resultCount === size) {
+          resolve(true);
+        }
+      });
+    }
+  });
+}
+
 // transaction
 
 
-function createAllData() {
+function createAllData(bankCount, personCount) {
   mongoose.Promise = global.Promise;
   mongoose.connect(dbConfig.url)
     .then(() => {
       console.log('Successfully connected to the database');
-      Promise.all([createBankData(100), createPersonData(100)]).then(() => {
-        for (let i = 0; i < 100; i += 1) {
-          Promise.all([loadRandomDbElement(Bank), loadRandomDbElement(Person)])
-            .then(values => createAccountData(getRandomInteger(1, 4), values[0], values[1]).then(() => console.log('done')));
-        }
-      });
+      Promise.all([createBankData(bankCount), createPersonData(personCount)])
+        .then(createRandomAccount(personCount)).then(() => console.log('DONE'));
     })
     .catch((err) => {
       console.log(err);
@@ -111,4 +137,4 @@ function createAllData() {
 }
 
 
-createAllData();
+createAllData(3, 10);
