@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const accountSchema = mongoose.Schema({
   person_id: String,
   IBAN: String,
-  bank_id: String
+  bank_id: String,
 
 });
 

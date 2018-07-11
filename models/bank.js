@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const bankSchema = mongoose.Schema({
 
-    location: String
+    location: String,
 
 
 });
