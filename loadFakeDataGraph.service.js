@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const faker = require('faker');
+
 faker.locale = 'tr';
 const Promise = require('bluebird');
 const fs = require('fs');
@@ -8,6 +9,7 @@ const Bank = require('./models/bank');
 const Person = require('./models/person');
 const Account = require('./models/account');
 const Transaction = require('./models/transaction');
+
 
 const graph = {
   vertices: [],
@@ -24,7 +26,7 @@ function loadRandomDbElement(model) {
       .then((data) => {
         const r = getRandomInteger(0, data);
         model.find().limit(1).skip(r)
-          .then(result => resolve(result[0]._id))
+          .then((result) => resolve(result[0]._id))
           .catch(() => reject(new Error(`Hata ${model}`)));
       });
   });
@@ -49,7 +51,7 @@ function createBankData(size) {
           location: bankData.location,
           lng: bankData.lng,
           lat: bankData.lat,
-          type: 'banka',
+          _type: 'banka',
         };
         graph.vertices.push(bankNode);
         if (resultCount === size) {
@@ -78,7 +80,7 @@ function createPersonData(size) {
           fullName: personData.fullName,
           title: personData.title,
           joinDate: personData.joinDate,
-          type: 'kisi',
+          _type: 'kisi',
         };
         graph.vertices.push(personNode);
         if (resultCount === size) {
@@ -97,8 +99,8 @@ function createAccountData(size, bank_id, person_id) {
       const account = new Account({
         person_id,
         bank_id,
-        IBAN: faker.finance.iban(),
         balance: faker.finance.amount(),
+        IBAN: faker.finance.iban(),
       });
       account.save((err, accData) => {
         if (err) reject(err);
@@ -109,20 +111,20 @@ function createAccountData(size, bank_id, person_id) {
           IBAN: accData.IBAN,
           bank_id: accData.bank_id,
           balance: accData.balance,
-          type: 'hesap',
+          _type: 'hesap',
         };
         graph.vertices.push(accountNode);
         const personEdge = {
-          source: accData.person_id,
-          target: accData._id,
+          _outV: accData.person_id,
+          _inV: accData._id,
           balance: accData.balance,
-          type: 'hesabi',
+          _type: 'hesabi',
         };
         graph.edges.push(personEdge);
         const bankEdge = {
-          source: accData._id,
-          target: accData.bank_id,
-          type: 'subesi',
+          _outV: accData._id,
+          _inV: accData.bank_id,
+          _type: 'subesi',
         };
         graph.edges.push(bankEdge);
         if (resultCount === size) {
@@ -165,10 +167,10 @@ function createTransactionData(size, senderId, receiverId) {
         if (err) reject(err);
         resultCount += 1;
         const transEdge = {
-          source: transData.senderAccountId,
-          target: transData.receiverAccountId,
+          _outV: transData.senderAccountId,
+          _inV: transData.receiverAccountId,
           amount: transData.amount,
-          type: 'aktardi',
+          _type: 'aktardi',
         };
         graph.edges.push(transEdge);
         if (resultCount === size) {
@@ -211,7 +213,7 @@ function createAllData(bankCount, personCount) {
         .then(() => {
           createRandomAccount(personCount).then(() => {
             createRandomTransaction(personCount).then(() => {
-              let json = JSON.stringify(graph);
+              const json = JSON.stringify(graph);
               fs.appendFile('sample.json', json, (err) => {
                 if (err) throw err;
               });
@@ -227,5 +229,4 @@ function createAllData(bankCount, personCount) {
     });
 }
 
-
-createAllData(3, 10);
+createAllData(20, 10000);
