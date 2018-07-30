@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const transactionSchema = mongoose.Schema({
 
-  senderAccountId: mongoose.Schema.ObjectId,
-  receiverAccountId: mongoose.Schema.ObjectId,
+  sender: mongoose.Schema.ObjectId,
+  receiver: mongoose.Schema.ObjectId,
   amount: Number,
 });
 

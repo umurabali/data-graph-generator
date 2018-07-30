@@ -1,9 +1,8 @@
 const mongoose = require('mongoose');
 
 const accountSchema = mongoose.Schema({
-  person_id: mongoose.Schema.ObjectId,
-  IBAN: String,
-  bank_id: mongoose.Schema.ObjectId,
+  owner: mongoose.Schema.ObjectId,
+  bank: mongoose.Schema.ObjectId,
   balance: Number,
 });
 
