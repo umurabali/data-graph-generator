@@ -3,32 +3,26 @@ const faker = require('faker');
 
 faker.locale = 'tr';
 const Promise = require('bluebird');
-const fs = require('fs');
 const dbConfig = require('./config/dbconfig');
 const Bank = require('./models/bank');
 const Person = require('./models/person');
 const Account = require('./models/account');
 const Transaction = require('./models/transaction');
 
-
-const graph = {
-  vertices: [],
-  edges: [],
-};
+let accountCount = 0;
 
 function getRandomInteger(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function loadRandomDbElement(model) {
+function loadRandomDbElement(model, modelCount) {
   return new Promise((resolve, reject) => {
-    model.count()
-      .then((data) => {
-        const r = getRandomInteger(0, data);
-        model.find().limit(1).skip(r)
-          .then((result) => resolve(result[0]._id))
-          .catch(() => reject(new Error(`Hata ${model}`)));
-      });
+    const r = getRandomInteger(0, modelCount);
+    model.findOne().skip(r)
+      .then((result, err) => {
+        resolve(result._id);
+      })
+      .catch(err => reject(new Error(`Hata ${model}${err}`)));
   });
 }
 
@@ -36,25 +30,23 @@ function loadRandomDbElement(model) {
 // bank
 function createBankData(size) {
   let resultCount = 0;
+  console.log('Generating banks...');
   return new Promise((resolve, reject) => {
     for (let i = 0; i < size; i += 1) {
       const bank = new Bank({
+        bankname: faker.company.companyName(),
         location: faker.address.city(),
-        lng: faker.address.longitude(),
-        lat: faker.address.latitude(),
+        longitude: faker.address.longitude(),
+        latitude: faker.address.latitude(),
       });
       bank.save((err, bankData) => {
-        if (err) reject(err);
+        if (err) {
+          console.log('ERROR');
+          reject(err);
+        }
         resultCount += 1;
-        const bankNode = {
-          _id: bankData._id,
-          location: bankData.location,
-          lng: bankData.lng,
-          lat: bankData.lat,
-          _type: 'banka',
-        };
-        graph.vertices.push(bankNode);
         if (resultCount === size) {
+          console.log('END');
           resolve(true);
         }
       });
@@ -65,24 +57,42 @@ function createBankData(size) {
 // kisi
 function createPersonData(size) {
   let resultCount = 0;
+  console.log('Generating customers...');
   return new Promise((resolve, reject) => {
     for (let i = 0; i < size; i++) {
       const person = new Person({
-        fullName: `${faker.name.firstName()} ${faker.name.lastName()}`,
-        title: faker.name.title(),
-        joinDate: faker.date.past(),
+        customername: `${faker.name.firstName()} ${faker.name.lastName()}`,
+        email: faker.internet.email(),
+        createdAt: faker.date.past(),
       });
       person.save((err, personData) => {
         if (err) reject(err);
         resultCount += 1;
-        const personNode = {
-          _id: personData._id,
-          fullName: personData.fullName,
-          title: personData.title,
-          joinDate: personData.joinDate,
-          _type: 'kisi',
-        };
-        graph.vertices.push(personNode);
+        if (resultCount === size) {
+          console.log('END');
+          resolve(true);
+        }
+      });
+    }
+  });
+}
+
+
+function createAccountData(size, bankId, personId) {
+  let resultCount = 0;
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < size; i += 1) {
+      const account = new Account({
+        owner: personId,
+        bank: bankId,
+        balance: faker.finance.amount(),
+      });
+      account.save((err, product) => {
+        if (err) {
+          reject(new Error('Error in saving account'));
+        }
+        accountCount += 1;
+        resultCount += 1;
         if (resultCount === size) {
           resolve(true);
         }
@@ -92,60 +102,19 @@ function createPersonData(size) {
 }
 
 // account
-function createAccountData(size, bank_id, person_id) {
-  let resultCount = 0;
-  return new Promise((resolve, reject) => {
-    for (let i = 0; i < size; i++) {
-      const account = new Account({
-        person_id,
-        bank_id,
-        balance: faker.finance.amount(),
-        IBAN: faker.finance.iban(),
-      });
-      account.save((err, accData) => {
-        if (err) reject(err);
-        resultCount += 1;
-        const accountNode = {
-          _id: accData._id,
-          person_id: accData.person_id,
-          IBAN: accData.IBAN,
-          bank_id: accData.bank_id,
-          balance: accData.balance,
-          _type: 'hesap',
-        };
-        graph.vertices.push(accountNode);
-        const personEdge = {
-          _outV: accData.person_id,
-          _inV: accData._id,
-          balance: accData.balance,
-          _type: 'hesabi',
-        };
-        graph.edges.push(personEdge);
-        const bankEdge = {
-          _outV: accData._id,
-          _inV: accData.bank_id,
-          _type: 'subesi',
-        };
-        graph.edges.push(bankEdge);
-        if (resultCount === size) {
-          resolve(true);
-        }
-      });
-    }
-  });
-}
-
-function createRandomAccount(count) {
+function createRandomAccount(count, bankCount, personCount) {
   let accCount = 0;
+  console.log('Generating accounts...');
   return new Promise((resolve, reject) => {
     for (let i = 0; i < count; i += 1) {
-      Promise.all([loadRandomDbElement(Bank), loadRandomDbElement(Person)])
+      Promise.all([loadRandomDbElement(Bank, bankCount), loadRandomDbElement(Person, personCount)])
         .then((values) => {
           createAccountData(getRandomInteger(1, 4), values[0], values[1])
             .then((result) => {
               if (!result) reject(new Error('Account not generated'));
               accCount += 1;
               if (accCount === count) {
+                console.log('END');
                 resolve(true);
               }
             });
@@ -159,20 +128,13 @@ function createTransactionData(size, senderId, receiverId) {
   return new Promise((resolve, reject) => {
     for (let i = 0; i < size; i += 1) {
       const transaction = new Transaction({
-        senderAccountId: senderId,
-        receiverAccountId: receiverId,
+        sender: senderId,
+        receiver: receiverId,
         amount: faker.finance.amount(),
       });
       transaction.save((err, transData) => {
         if (err) reject(err);
         resultCount += 1;
-        const transEdge = {
-          _outV: transData.senderAccountId,
-          _inV: transData.receiverAccountId,
-          amount: transData.amount,
-          _type: 'aktardi',
-        };
-        graph.edges.push(transEdge);
         if (resultCount === size) {
           resolve(true);
         }
@@ -181,17 +143,21 @@ function createTransactionData(size, senderId, receiverId) {
   });
 }
 
+// transaction
 function createRandomTransaction(count) {
   let trnsCount = 0;
+  console.log('Generating Transactions...');
   return new Promise((resolve, reject) => {
     for (let i = 0; i < count; i += 1) {
-      Promise.all([loadRandomDbElement(Account), loadRandomDbElement(Account)])
+      Promise.all([loadRandomDbElement(Account, accountCount),
+        loadRandomDbElement(Account, accountCount)])
         .then((accounts) => {
           createTransactionData(getRandomInteger(1, 10), accounts[0], accounts[1])
             .then((success) => {
               if (!success) reject(new Error('Failing in creating transactions'));
               trnsCount += 1;
               if (trnsCount === count) {
+                console.log('END');
                 resolve(true);
               }
             });
@@ -200,10 +166,7 @@ function createRandomTransaction(count) {
   });
 }
 
-
-// transaction
-
-
+// driver function
 function createAllData(bankCount, personCount) {
   mongoose.Promise = global.Promise;
   mongoose.connect(dbConfig.url)
@@ -211,14 +174,11 @@ function createAllData(bankCount, personCount) {
       console.log('Successfully connected to the database');
       Promise.all([createBankData(bankCount), createPersonData(personCount)])
         .then(() => {
-          createRandomAccount(personCount).then(() => {
-            createRandomTransaction(personCount).then(() => {
-              const json = JSON.stringify(graph);
-              fs.appendFile('sample.json', json, (err) => {
-                if (err) throw err;
+          createRandomAccount(personCount, bankCount, personCount).then(() => {
+            createRandomTransaction(personCount)
+              .then(() => {
+                console.log('DONE');
               });
-              console.log('DONE');
-            });
           });
         });
     })
@@ -228,5 +188,4 @@ function createAllData(bankCount, personCount) {
       process.exit();
     });
 }
-
-createAllData(20, 10000);
+createAllData(50, 30000);

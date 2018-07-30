@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 
 const bankSchema = mongoose.Schema({
+  bankname: String,
   location: String,
-  lng: Number,
-  lat: Number,
+  longitude: Number,
+  latitude: Number,
 });
 
 module.exports = mongoose.model('Bank', bankSchema);
