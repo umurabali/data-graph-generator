@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const personalCustomerSchema = mongoose.Schema({
+  id: Number,
   customerNo: Number, // MUS_NO
   birthday: Date, // DOGUM_TRH
   surname: String, // SOYAD

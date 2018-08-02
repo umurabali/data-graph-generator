@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const corporateCustomerSchema = mongoose.Schema({
+  id: Number,
   customerNo: Number, // MUS_NO
   VKN: Number, // VERGI KIMLIK NUMARASI
   title: String, // UNVAN

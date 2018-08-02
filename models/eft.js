@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 const eftSchema = mongoose.Schema({
+  id: Number,
   costAmount: Number, // MASRAF_TUTAR
   date: Date, // TARIH
   amount: Number, // TUTAR
-  senderId: mongoose.Schema.ObjectId,
-  receiverId: mongoose.Schema.ObjectId,
+  senderId: Number,
+  receiverId: Number,
 });
 
 module.exports = mongoose.model('EFT', eftSchema);
